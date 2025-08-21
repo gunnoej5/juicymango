@@ -1,2 +1,2 @@
 # juicymango
-Go to the main branch.
+Go to the master branch.
