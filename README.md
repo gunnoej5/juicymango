@@ -1,5 +1,8 @@
 # JuicyMango
 
+
+This is primarily an exercise in how different LLMs handle code migration.  This code was written in ~2010, primarily in Python2 by the contributors listed below (myself included).  This repository contains the first pass using Gemini 2.5.  There are bugs, feel free to contribute or whatever.
+
 JuicyMango is an open-source intelligence (OSINT) analysis engine designed to collect and analyze data from various sources, including IRC, Twitter, Facebook, RSS feeds, and Gmail. It provides a web-based interface for interactive analysis and visualization of collected intelligence.
 
 ## Features
