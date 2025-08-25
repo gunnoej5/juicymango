@@ -41,87 +41,56 @@ import cgi
 import email.utils
 import functools
 import hmac
-import httplib
-import imp
+import http.client as httplib
+# import imp
 import itertools
 import mimetypes
 import os
 import re
 import subprocess
 import tempfile
-import thread
+import _thread as thread
 import threading
 import time
 import warnings
+import pickle
+from json import dumps as json_dumps, loads as json_lds
+from io import BytesIO
 
-from Cookie import SimpleCookie
+from http.cookies import SimpleCookie
 from datetime import date as datedate, datetime, timedelta
 from tempfile import TemporaryFile
 from traceback import format_exc, print_exc
-from urlparse import urljoin, SplitResult as UrlSplitResult
+from urllib.parse import urljoin, SplitResult as UrlSplitResult
 
 # Workaround for a bug in some versions of lib2to3 (fixed on CPython 2.7 and 3.2)
 import urllib
-urlencode = urllib.urlencode
-urlquote = urllib.quote
-urlunquote = urllib.unquote
+urlencode = urllib.parse.urlencode
+urlquote = urllib.parse.quote
+urlunquote = urllib.parse.unquote
 
-try: from collections import MutableMapping as DictMixin
+try: from collections.abc import MutableMapping as DictMixin
 except ImportError: # pragma: no cover
-    from UserDict import DictMixin
+    from collections import UserDict as DictMixin
 
-try: from urlparse import parse_qs
-except ImportError: # pragma: no cover
-    from cgi import parse_qs
+try: from urllib.parse import parse_qs
 
-try: import cPickle as pickle
-except ImportError: # pragma: no cover
-    import pickle
 
-try: from json import dumps as json_dumps, loads as json_lds
-except ImportError: # pragma: no cover
-    try: from simplejson import dumps as json_dumps, loads as json_lds
-    except ImportError: # pragma: no cover
-        try: from django.utils.simplejson import dumps as json_dumps, loads as json_lds
-        except ImportError: # pragma: no cover
-            def json_dumps(data):
-                raise ImportError("JSON support requires Python 2.6 or simplejson.")
-            json_lds = json_dumps
 
-py3k = sys.version_info >= (3,0,0)
-NCTextIOWrapper = None
 
-if sys.version_info < (2,6,0):
-    msg = "Python 2.5 support may be dropped in future versions of Bottle."
-    warnings.warn(msg, DeprecationWarning)
 
-if py3k: # pragma: no cover
-    json_loads = lambda s: json_lds(touni(s))
-    # See Request.POST
-    from io import BytesIO
-    def touni(x, enc='utf8', err='strict'):
-        """ Convert anything to unicode """
-        return str(x, enc, err) if isinstance(x, bytes) else str(x)
-    if sys.version_info < (3,2,0):
-        from io import TextIOWrapper
-        class NCTextIOWrapper(TextIOWrapper):
-            ''' Garbage collecting an io.TextIOWrapper(buffer) instance closes
-                the wrapped buffer. This subclass keeps it open. '''
-            def close(self): pass
-else:
-    json_loads = json_lds
-    from StringIO import StringIO as BytesIO
-    bytes = str
-    def touni(x, enc='utf8', err='strict'):
-        """ Convert anything to unicode """
-        return x if isinstance(x, unicode) else unicode(str(x), enc, err)
 
-def tob(data, enc='utf8'):
-    """ Convert anything to bytes """
-    return data.encode(enc) if isinstance(data, unicode) else bytes(data)
 
-tonat = touni if py3k else tob
-tonat.__doc__ = """ Convert anything to native strings """
+
+
+
+
+
+
+                
+
+
+
 
 def try_update_wrapper(wrapper, wrapped, *a, **ka):
     try: # Bug: functools breaks if wrapper is an instane method
@@ -370,7 +339,7 @@ class Router(object):
 
         try:
             re_match = re.compile('^(%s)$' % pattern).match
-        except re.error, e:
+        except re.error as e:
             raise RouteSyntaxError("Could not add Route: %s (%s)" % (rule, e))
 
         def match(path):
@@ -387,7 +356,7 @@ class Router(object):
             combined = '%s|(^%s$)' % (self.dynamic[-1][0].pattern, flat_pattern)
             self.dynamic[-1] = (re.compile(combined), self.dynamic[-1][1])
             self.dynamic[-1][1].append((match, target))
-        except (AssertionError, IndexError), e: # AssertionError: Too many groups
+        except (AssertionError, IndexError) as e: # AssertionError: Too many groups
             self.dynamic.append((re.compile('(^%s$)' % flat_pattern),
                                 [(match, target)]))
         return match
@@ -400,7 +369,7 @@ class Router(object):
             for i, value in enumerate(anons): query['anon%d'%i] = value
             url = ''.join([f(query.pop(n)) if n else f for (n,f) in builder])
             return url if not query else url+'?'+urlencode(query)
-        except KeyError, e:
+        except KeyError as e:
             raise RouteBuildError('Missing URL argument: %r' % e.args[0])
 
     def match(self, environ):
@@ -735,14 +704,14 @@ class Bottle(object):
             environ['route.handle'] = environ['bottle.route'] = route
             environ['route.url_args'] = args
             return route.call(**args)
-        except HTTPResponse, r:
+        except HTTPResponse as r:
             return r
         except RouteReset:
             route.reset()
             return self._handle(environ)
         except (KeyboardInterrupt, SystemExit, MemoryError):
             raise
-        except Exception, e:
+        except Exception as e:
             if not self.catchall: raise
             stacktrace = format_exc(10)
             environ['wsgi.errors'].write(stacktrace)
@@ -797,9 +766,9 @@ class Bottle(object):
                 first = out.next()
         except StopIteration:
             return self._cast('', request, response)
-        except HTTPResponse, e:
+        except HTTPResponse as e:
             first = e
-        except Exception, e:
+        except Exception as e:
             first = HTTPError(500, 'Unhandled exception', e, format_exc(10))
             if isinstance(e, (KeyboardInterrupt, SystemExit, MemoryError))\
             or not self.catchall:
@@ -831,7 +800,7 @@ class Bottle(object):
             return out
         except (KeyboardInterrupt, SystemExit, MemoryError):
             raise
-        except Exception, e:
+        except Exception as e:
             if not self.catchall: raise
             err = '<h1>Critical error while processing request: %s</h1>' \
                   % environ.get('PATH_INFO', '/')
@@ -1604,7 +1573,7 @@ class MultiDict(DictMixin):
         try:
             val = self.dict[key][index]
             return type(val) if type else val
-        except Exception, e:
+        except Exception as e:
             pass
         return default
 
@@ -1645,7 +1614,7 @@ class FormsDict(MultiDict):
             elif isinstance(value, unicode): # Python 3 WSGI
                 return value.encode('latin1').decode(enc)
             return value
-        except UnicodeError, e:
+        except UnicodeError as e:
             return default
 
     def __getattr__(self, name): return self.getunicode(name, default=u'')
@@ -2124,8 +2093,8 @@ class FapwsServer(ServerAdapter):
         evwsgi.start(self.host, port)
         # fapws3 never releases the GIL. Complain upstream. I tried. No luck.
         if 'BOTTLE_CHILD' in os.environ and not self.quiet:
-            print "WARNING: Auto-reloading does not work with Fapws3."
-            print "         (Fapws3 breaks python thread support)"
+            print("WARNING: Auto-reloading does not work with Fapws3.")
+            print("         (Fapws3 breaks python thread support)")
         evwsgi.set_base_module(base)
         def app(environ, start_response):
             environ['wsgi.multiprocess'] = False
@@ -2903,14 +2872,14 @@ ext = _ImportRedirect(__name__+'.ext', 'bottle_%s').module
 if __name__ == '__main__':
     opt, args, parser = _cmd_options, _cmd_args, _cmd_parser
     if opt.version:
-        print 'Bottle', __version__; sys.exit(0)
+        print('Bottle', __version__); sys.exit(0)
     if not args:
         parser.error('No application specified.')
 
     try:
         sys.path.insert(0, '.')
         sys.modules.setdefault('bottle', sys.modules['__main__'])
-    except (AttributeError, ImportError), e:
+    except (AttributeError, ImportError) as e:
         parser.error(e.args[0])
 
     if opt.bind and ':' in opt.bind:

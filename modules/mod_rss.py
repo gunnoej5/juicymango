@@ -22,17 +22,15 @@
 #
 #########################################################################
 
-import thread,sys
+import _thread,sys
 sys.path.append("..")
 from src.core import *
 from src.output import *
-import urllib2, urllib, time
+import urllib.request, urllib.parse, time
 from includes import feedparser
 from includes import TorSocks
 import re
-
-#Read in code to dynamically get the module name.
-execfile('src/getname')
+from src.getname import module
 
 #Get configuration options
 interval = int(check_config("MOD_RSS_INTERVAL="))
@@ -120,7 +118,7 @@ def main(query,keywords,tor,*args):
 			except:
 				print_error(module, "Could not parse url: %s  check to make sure it is a valid RSS or Atom feed" % url)
 				break
-		except Exception, err:
+		except Exception as err:
 			log_error(module, feed, str(err))
 			sys.exit(1)
 
@@ -137,7 +135,7 @@ if len(feeds) > 0:
 			torup()
 			TorSocks.Tor(torhost, torctlport, torpass).get_new_circuit()
 			time.sleep(1) ##workaround to prevent the same circuits from being used
-		thread.start_new_thread(main, (feed[0],feed[1],feed[2],2))
+		_thread.start_new_thread(main, (feed[0],feed[1],feed[2],2))
 
 else:
 	print_error(module, "No feeds defined for this module")

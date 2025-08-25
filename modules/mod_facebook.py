@@ -23,14 +23,12 @@
 #
 #########################################################################
 
-import thread,sys
+import _thread,sys
 sys.path.append("..")
 from src.core import *
 from src.output import *
-import json, urllib2, time
-
-#Read in code to dynamically get the module name.
-execfile('src/getname')
+import json, urllib.request, time
+from src.getname import module
 
 #Get configuration options
 interval = int(check_config("MOD_FACEBOOK_INTERVAL="))
@@ -41,7 +39,7 @@ def main(query,*args):
 		try:
 
 			url = "http://graph.facebook.com/search?q=%s&type=post" % (query) 
-			data = json.load(urllib2.urlopen(url))
+			data = json.load(urllib.request.urlopen(url))
 
 			#Enable this print to see the raw data dump for troubleshooting
 			#print json.dumps(data)
@@ -56,7 +54,7 @@ def main(query,*args):
 						modOutput.send_output()
 					except KeyError:
 						pass
-		except Exception, err:
+		except Exception as err:
 			log_error(module, query, str(err))
 			sys.exit(1)
 
@@ -69,7 +67,7 @@ keywords = get_keywords("mod_facebook")
 if len(keywords) > 0:
 	print_status(module,"loading...")
 	for keyword in keywords:
-		thread.start_new_thread(main, (keyword[1],2))
+		_thread.start_new_thread(main, (keyword[1],2))
 else:
 	print_error(module, "No Keywords defined for this module")
 

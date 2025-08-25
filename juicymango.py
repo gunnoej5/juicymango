@@ -122,3 +122,5 @@ while 1:
     except KeyboardInterrupt:
         logging.warning(f"{module}: Quiting SpicyMango...")
         sys.exit()
+
+print("This should not be printed")

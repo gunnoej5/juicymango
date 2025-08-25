@@ -24,14 +24,12 @@
 #
 #########################################################################
 
-import thread,sys,re,time
+import _thread,sys,re,time
 from includes import irc
 sys.path.append("..")
 from src.core import *
 from src.output import *
-
-#Read in code to dynamically get the name of the module.
-execfile('src/getname')
+from src.getname import module
 
 def main():
 	#Get parameters from config file
@@ -49,7 +47,7 @@ def main():
 	
 	#Hanle for Raw input...can be used to debug module.
 	def handle_raw(line):
-	    print line
+	    print(line)
 
 	def handle_parsed(prefix, command, params):
 	    if command=="PRIVMSG":
@@ -86,7 +84,7 @@ def main():
 	while 1:
 		try:
 			MyIRC.main_loop( )
-		except Exception, err:
+		except Exception as err:
 			log_error(module, keywords[0][1], str(err))
 			sys.exit(1)
 
@@ -95,7 +93,7 @@ keywords = get_keywords("mod_irc")
 #Create a new thread for each keyword and run
 if len(keywords) > 0:
 	print_status(module,"loading...")
-	thread.start_new_thread(main, ())
+	_thread.start_new_thread(main, ())
 else:
 	print_error(module, "No Keywords defined for this module")
 

@@ -38,51 +38,50 @@ from src.getname import module
 
 # Get configuation options from the config file.
 def check_config(param):
-	config = configparser.ConfigParser()
-	config_path = os.path.join(os.path.dirname(__file__), '..', 'config.ini')
-	try:
-		config.read(config_path)
-		# Remove the trailing '=' from the parameter name
-		param_name = param.rstrip('=')
-		return config['DEFAULT'][param_name]
-	except Exception as e:
-		logging.error(f"{module}: Cannot read configuration file or parameter: {e}")
-		sys.exit()
+    config = configparser.ConfigParser()
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config.ini')
+    try:
+        config.read(config_path)
+        # Remove the trailing '=' from the parameter name
+        param_name = param.rstrip('=')
+        return config['DEFAULT'][param_name]
+    except Exception as e:
+        logging.error(f"{module}: Cannot read configuration file or parameter: {e}")
+        sys.exit()
 
 # Get Keyword/Module pairs from the keywords file.
 def get_keywords(param):
-        path = os.path.join(os.path.dirname(__file__), '..', 'keywords')
-        try:
-                fileopen = open(path, "r")
-        except:
-                logging.error(f"{module}: Cannot find keywords file. Make sure its in the spicymango directory.")
-		sys.exit()
-	wordlist = []
-        # iterate through lines in file
-        for line in fileopen:
-                if not re.search('#.', line):
-                        match = re.search(param, line)
-                        if match:
-				wordlist.append(json.loads(line))
+    path = os.path.join(os.path.dirname(__file__), '..', 'keywords')
+    try:
+        with open(path, 'r') as f:
+            all_keywords = json.load(f)
+        
+        wordlist = []
+        for keyword_list in all_keywords:
+            if keyword_list[0] == param:
+                wordlist.append(keyword_list)
         return wordlist
+    except (IOError, json.JSONDecodeError) as e:
+        logging.error(f"{module}: Cannot read or parse keywords file: {e}")
+        sys.exit()
 
 def get_feeds(param):
-	path = os.path.join(os.path.dirname(__file__), '..', 'feeds')
-        try:
-                fileopen = open(path, "r")
-        except:
-                logging.error(f"{module}: Cannot find feeds file. Make sure its in the spicymango directory.")
-                sys.exit()
-        feedlist = []
-        # iterate through lines in file
-        for line in fileopen:
-                if not re.search('^#.', line):
-			match = re.search('http', line)
-                	if match:
-				feedlist.append(json.loads(line))
-        return feedlist
+    path = os.path.join(os.path.dirname(__file__), '..', 'feeds')
+    try:
+        fileopen = open(path, "r")
+    except:
+        logging.error(f"{module}: Cannot find feeds file. Make sure its in the spicymango directory.")
+        sys.exit()
+    feedlist = []
+    # iterate through lines in file
+    for line in fileopen:
+        if not re.search('^#.', line):
+            match = re.search('http', line)
+            if match:
+                feedlist.append(json.loads(line))
+    return feedlist
 
 def log_error(mod, keyword, error):
-	import datetime
-	sys.stderr.write('%s | %s | SEARCH_TERM: %s | ERROR: %s\n' % (datetime.datetime.now(), mod, keyword, error))
-	logging.error(f"{mod}: Keyword: {keyword} - Thread exited with Error")
+    import datetime
+    sys.stderr.write('%s | %s | SEARCH_TERM: %s | ERROR: %s\n' % (datetime.datetime.now(), mod, keyword, error))
+    logging.error(f"{mod}: Keyword: {keyword} - Thread exited with Error")

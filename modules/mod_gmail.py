@@ -23,15 +23,13 @@
 #
 #########################################################################
 
-import thread,sys
+import _thread,sys
 sys.path.append("..")
 from src.core import *
 from src.output import *
 import imaplib, email
-#import json, urllib2, urllib, time
-
-#Read in code to dynamically get the module name.
-execfile('src/getname')
+from src.getname import module
+#import json, urllib.request, urllib.parse, time
 
 #Get configuration options
 interval = int(check_config("MOD_GMAIL_INTERVAL="))
@@ -87,7 +85,7 @@ def main(gmail, password, mailbox, *args):
 						print_error(module, 'Error collecting email')
 						pass
 			mail.logout()
-		except Exception, err:
+		except Exception as err:
 			log_error(module, mailbox, str(err))
 			sys.exit(1)
 
@@ -100,7 +98,7 @@ keywords = get_keywords("mod_gmail")
 if len(keywords) > 0:
 	print_status(module,"loading...")
 	for keyword in keywords:
-		thread.start_new_thread(main, (gmail, password, keyword[1],2))
+		_thread.start_new_thread(main, (gmail, password, keyword[1],2))
 else:
 	print_error(module, "No mailboxes defined for this module")
 
